@@ -17,7 +17,9 @@ module Fastlane
         cmd << "--danger_id=#{danger_id}" if danger_id
         cmd << "--dangerfile=#{dangerfile}" if dangerfile
         cmd << "--fail-on-errors=true" if params[:fail_on_errors]
+        cmd << "--fail-if-no-pr=true" if params[:fail_if_no_pr]
         cmd << "--new-comment" if params[:new_comment]
+        cmd << "--remove-previous-comments" if params[:remove_previous_comments]
         cmd << "--base=#{base}" if base
         cmd << "--head=#{head}" if head
         cmd << "pr #{pr}" if pr
@@ -78,6 +80,12 @@ module Fastlane
                                        is_string: false,
                                        optional: true,
                                        default_value: false),
+          FastlaneCore::ConfigItem.new(key: :remove_previous_comments,
+                                       env_name: "FL_DANGER_REMOVE_PREVIOUS_COMMENT",
+                                       description: "Makes Danger remove all previous comment and create a new one in the end of the list",
+                                       is_string: false,
+                                       optional: true,
+                                       default_value: false),
           FastlaneCore::ConfigItem.new(key: :base,
                                        env_name: "FL_DANGER_BASE",
                                        description: "A branch/tag/commit to use as the base of the diff. [master|dev|stable]",
@@ -92,7 +100,12 @@ module Fastlane
                                        env_name: "FL_DANGER_PR",
                                        description: "Run danger on a specific pull request. e.g. \"https://github.com/danger/danger/pull/518\"",
                                        is_string: true,
-                                       optional: true)
+                                       optional: true),
+          FastlaneCore::ConfigItem.new(key: :fail_if_no_pr,
+                                       env_name: "FL_DANGER_FAIL_IF_NO_PR",
+                                       description: "Fail Danger execution if no PR is found",
+                                       type: Boolean,
+                                       default_value: false)
         ]
       end
 

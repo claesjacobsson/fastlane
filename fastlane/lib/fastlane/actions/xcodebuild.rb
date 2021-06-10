@@ -2,7 +2,7 @@
 module Fastlane
   module Actions
     module SharedValues
-      XCODEBUILD_ARCHIVE = :XCODEBUILD_ARCHIVE
+      XCODEBUILD_ARCHIVE ||= :XCODEBUILD_ARCHIVE
       XCODEBUILD_DERIVED_DATA_PATH = :XCODEBUILD_DERIVED_DATA_PATH
     end
 
@@ -305,12 +305,12 @@ module Fastlane
 
           # Normalize some values
           export_options[:teamID] = CredentialsManager::AppfileConfig.try_fetch_value(:team_id) if !export_options[:teamID] && CredentialsManager::AppfileConfig.try_fetch_value(:team_id)
-          export_options[:onDemandResourcesAssetPacksBaseURL] = URI.escape(export_options[:onDemandResourcesAssetPacksBaseURL]) if export_options[:onDemandResourcesAssetPacksBaseURL]
+          export_options[:onDemandResourcesAssetPacksBaseURL] = Addressable::URI.encode(export_options[:onDemandResourcesAssetPacksBaseURL]) if export_options[:onDemandResourcesAssetPacksBaseURL]
           if export_options[:manifest]
-            export_options[:manifest][:appURL] = URI.escape(export_options[:manifest][:appURL]) if export_options[:manifest][:appURL]
-            export_options[:manifest][:displayImageURL] = URI.escape(export_options[:manifest][:displayImageURL]) if export_options[:manifest][:displayImageURL]
-            export_options[:manifest][:fullSizeImageURL] = URI.escape(export_options[:manifest][:fullSizeImageURL]) if export_options[:manifest][:fullSizeImageURL]
-            export_options[:manifest][:assetPackManifestURL] = URI.escape(export_options[:manifest][:assetPackManifestURL]) if export_options[:manifest][:assetPackManifestURL]
+            export_options[:manifest][:appURL] = Addressable::URI.encode(export_options[:manifest][:appURL]) if export_options[:manifest][:appURL]
+            export_options[:manifest][:displayImageURL] = Addressable::URI.encode(export_options[:manifest][:displayImageURL]) if export_options[:manifest][:displayImageURL]
+            export_options[:manifest][:fullSizeImageURL] = Addressable::URI.encode(export_options[:manifest][:fullSizeImageURL]) if export_options[:manifest][:fullSizeImageURL]
+            export_options[:manifest][:assetPackManifestURL] = Addressable::URI.encode(export_options[:manifest][:assetPackManifestURL]) if export_options[:manifest][:assetPackManifestURL]
           end
 
           # Saves options to plist

@@ -29,6 +29,8 @@ module Fastlane
       @source_swift_code_file_folder_path = File.expand_path(File.join(Fastlane::ROOT, "/swift"))
       @target_swift_code_file_folder_path = FastlaneCore::FastlaneFolder.swift_folder_path
 
+      Fastlane::Setup.setup_swift_support
+
       manifest_file = File.join(@source_swift_code_file_folder_path, "/upgrade_manifest.json")
       UI.success("loading manifest: #{manifest_file}")
       @manifest_hash = JSON.parse(File.read(manifest_file))
@@ -89,6 +91,10 @@ module Fastlane
 
       source_file_content = File.read(source)
       target_file_content = File.read(target)
+
+      # ignore if files don't contain FastlaneRunnerAPIVersion
+      return false unless source_file_content.include?("FastlaneRunnerAPIVersion")
+      return false unless target_file_content.include?("FastlaneRunnerAPIVersion")
 
       bundled_version = source_file_content.match(regex_to_use)[1]
       target_version = target_file_content.match(regex_to_use)[1]

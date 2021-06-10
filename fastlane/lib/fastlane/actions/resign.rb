@@ -26,7 +26,7 @@ module Fastlane
           )',
           '# You may provide multiple provisioning profiles if the application contains nested
           # applications or app extensions, which need their own provisioning profile.
-          # You can do so by passing an array of provisiong profile strings or a hash
+          # You can do so by passing an array of provisioning profile strings or a hash
           # that associates provisioning profile values to bundle identifier keys.
           resign(
             ipa: "path/to/ipa", # can omit if using the `ipa` action
@@ -75,7 +75,7 @@ module Fastlane
                                                  else [value]
                                                  end
                                          files.each do |file|
-                                           UI.user_error!("Couldn't find provisiong profile at path '#{file}'") unless File.exist?(file)
+                                           UI.user_error!("Couldn't find provisioning profile at path '#{file}'") unless File.exist?(file)
                                          end
                                        end),
           FastlaneCore::ConfigItem.new(key: :version,
@@ -108,7 +108,7 @@ module Fastlane
                                        optional: true),
           FastlaneCore::ConfigItem.new(key: :use_app_entitlements,
                                        env_name: "FL_USE_APP_ENTITLEMENTS",
-                                       description: "Extract app bundle codesigning entitlements and combine with entitlements from new provisionin profile",
+                                       description: "Extract app bundle codesigning entitlements and combine with entitlements from new provisioning profile",
                                        conflicting_options: [:entitlements],
                                        is_string: false,
                                        optional: true),

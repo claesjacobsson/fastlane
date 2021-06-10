@@ -69,6 +69,11 @@ module Scan
                                      default_value: false,
                                      type: Boolean,
                                      optional: true),
+        FastlaneCore::ConfigItem.new(key: :ensure_devices_found,
+                                     description: "Should fail if devices not found",
+                                     default_value: false,
+                                     type: Boolean,
+                                     optional: true),
 
         # simulator management
         FastlaneCore::ConfigItem.new(key: :force_quit_simulator,
@@ -80,6 +85,11 @@ module Scan
                                      env_name: 'SCAN_RESET_SIMULATOR',
                                      description: "Enabling this option will automatically erase the simulator before running the application",
                                      default_value: false,
+                                     type: Boolean),
+        FastlaneCore::ConfigItem.new(key: :disable_slide_to_type,
+                                     env_name: 'SCAN_DISABLE_SLIDE_TO_TYPE',
+                                     description: "Enabling this option will disable the simulator from showing the 'Slide to type' prompt",
+                                     default_value: true,
                                      type: Boolean),
         FastlaneCore::ConfigItem.new(key: :prelaunch_simulator,
                                      env_name: 'SCAN_PRELAUNCH_SIMULATOR',
@@ -116,6 +126,29 @@ module Scan
                                      is_string: false,
                                      verify_block: proc do |value|
                                        verify_type('skip_testing', [Array, String], value)
+                                     end),
+
+        # test plans to run
+        FastlaneCore::ConfigItem.new(key: :testplan,
+                                     env_name: "SCAN_TESTPLAN",
+                                     description: "The testplan associated with the scheme that should be used for testing",
+                                     is_string: true,
+                                     optional: true),
+        FastlaneCore::ConfigItem.new(key: :only_test_configurations,
+                                     env_name: "SCAN_ONLY_TEST_CONFIGURATIONS",
+                                     description: "Array of strings matching test plan configurations to run",
+                                     optional: true,
+                                     is_string: false,
+                                     verify_block: proc do |value|
+                                       verify_type('only_test_configurations', [Array, String], value)
+                                     end),
+        FastlaneCore::ConfigItem.new(key: :skip_test_configurations,
+                                     env_name: "SCAN_SKIP_TEST_CONFIGURATIONS",
+                                     description: "Array of strings matching test plan configurations to skip",
+                                     optional: true,
+                                     is_string: false,
+                                     verify_block: proc do |value|
+                                       verify_type('skip_test_configurations', [Array, String], value)
                                      end),
 
         # other test options
@@ -170,6 +203,11 @@ module Scan
                                      description: "Should the HTML report be opened when tests are completed?",
                                      is_string: false,
                                      default_value: false),
+        FastlaneCore::ConfigItem.new(key: :disable_xcpretty,
+                                     env_name: "SCAN_DISABLE_XCPRETTY",
+                                     description: "Disable xcpretty formatting of build, similar to `output_style='raw'` but this will also skip the test results table",
+                                     type: Boolean,
+                                     optional: true),
         FastlaneCore::ConfigItem.new(key: :output_directory,
                                      short_option: "-o",
                                      env_name: "SCAN_OUTPUT_DIRECTORY",
@@ -181,7 +219,7 @@ module Scan
         FastlaneCore::ConfigItem.new(key: :output_style,
                                      short_option: "-b",
                                      env_name: "SCAN_OUTPUT_STYLE",
-                                     description: "Define how the output should look like. Valid values are: standard, basic, rspec, or raw (disables xcpretty)",
+                                     description: "Define how the output should look like. Valid values are: standard, basic, rspec, or raw (disables xcpretty during xcodebuild)",
                                      optional: true,
                                      verify_block: proc do |value|
                                        UI.user_error!("Invalid output_style #{value}") unless ['standard', 'basic', 'rspec', 'raw'].include?(value)
@@ -213,7 +251,7 @@ module Scan
                                      env_name: "SCAN_SUPPRESS_XCODE_OUTPUT",
                                      description: "Suppress the output of xcodebuild to stdout. Output is still saved in buildlog_path",
                                      optional: true,
-                                     is_string: false),
+                                     type: Boolean),
         FastlaneCore::ConfigItem.new(key: :formatter,
                                      short_option: "-n",
                                      env_name: "SCAN_FORMATTER",
@@ -236,6 +274,11 @@ module Scan
                                      optional: true,
                                      is_string: false,
                                      default_value: false),
+        FastlaneCore::ConfigItem.new(key: :output_xctestrun,
+                                     type: Boolean,
+                                     env_name: "SCAN_OUTPUT_XCTESTRUN",
+                                     description: "Should provide additional copy of .xctestrun file (settings.xctestrun) and place in output path?",
+                                     default_value: false),
         FastlaneCore::ConfigItem.new(key: :result_bundle,
                                      short_option: "-z",
                                      env_name: "SCAN_RESULT_BUNDLE",
@@ -249,6 +292,11 @@ module Scan
                                      default_value: false),
 
         # concurrency
+        FastlaneCore::ConfigItem.new(key: :concurrent_workers,
+                                     type: Integer,
+                                     env_name: "SCAN_CONCURRENT_WORKERS",
+                                     description: "Specify the exact number of test runners that will be spawned during parallel testing. Equivalent to -parallel-testing-worker-count",
+                                     optional: true),
         FastlaneCore::ConfigItem.new(key: :max_concurrent_simulators,
                                      type: Integer,
                                      env_name: "SCAN_MAX_CONCURRENT_SIMULATORS",
@@ -311,6 +359,18 @@ module Scan
                                        UI.user_error!("File not found at path '#{File.expand_path(value)}'") unless File.exist?(value)
                                      end),
 
+        # build settings
+        FastlaneCore::ConfigItem.new(key: :app_name,
+                                    env_name: "SCAN_APP_NAME",
+                                    optional: true,
+                                    description: "App name to use in slack message and logfile name",
+                                    is_string: true),
+        FastlaneCore::ConfigItem.new(key: :deployment_target_version,
+                                    env_name: "SCAN_DEPLOYMENT_TARGET_VERSION",
+                                    optional: true,
+                                    description: "Target version of the app being build or tested. Used to filter out simulator version",
+                                    is_string: true),
+
         # slack
         FastlaneCore::ConfigItem.new(key: :slack_url,
                                      short_option: "-i",
@@ -348,7 +408,7 @@ module Scan
         FastlaneCore::ConfigItem.new(key: :slack_icon_url,
                                      env_name: "SCAN_SLACK_ICON_URL",
                                      description: "Overrides the webhook's image property if slack_use_webhook_configured_username_and_icon is false",
-                                     default_value: "https://s3-eu-west-1.amazonaws.com/fastlane.tools/fastlane.png",
+                                     default_value: "https://fastlane.tools/assets/img/fastlane_icon.png",
                                      is_string: true,
                                      optional: true),
         FastlaneCore::ConfigItem.new(key: :skip_slack,
@@ -361,6 +421,11 @@ module Scan
                                      description: "Only post on Slack if the tests fail",
                                      is_string: false,
                                      default_value: false),
+        FastlaneCore::ConfigItem.new(key: :slack_default_payloads,
+                                     env_name: "SCAN_SLACK_DEFAULT_PAYLOADS",
+                                     description: "Specifies default payloads to include in Slack messages. For more info visit https://docs.fastlane.tools/actions/slack",
+                                     optional: true,
+                                     type: Array),
 
         # misc
         FastlaneCore::ConfigItem.new(key: :destination,
@@ -369,6 +434,15 @@ module Scan
                                      description: "Use only if you're a pro, use the other options instead",
                                      is_string: false,
                                      optional: true),
+        FastlaneCore::ConfigItem.new(key: :catalyst_platform,
+                                     env_name: "SCAN_CATALYST_PLATFORM",
+                                     description: "Platform to build when using a Catalyst enabled app. Valid values are: ios, macos",
+                                     type: String,
+                                     optional: true,
+                                     verify_block: proc do |value|
+                                       av = %w(ios macos)
+                                       UI.user_error!("Unsupported export_method '#{value}', must be: #{av}") unless av.include?(value)
+                                     end),
         FastlaneCore::ConfigItem.new(key: :custom_report_file_name,
                                      env_name: "SCAN_CUSTOM_REPORT_FILE_NAME",
                                      description: "Sets custom full report file name when generating a single report",
@@ -381,7 +455,33 @@ module Scan
                                     description: "Allows for override of the default `xcodebuild` command",
                                     type: String,
                                     optional: true,
-                                    default_value: "env NSUnbufferedIO=YES xcodebuild")
+                                    default_value: "env NSUnbufferedIO=YES xcodebuild"),
+        FastlaneCore::ConfigItem.new(key: :cloned_source_packages_path,
+                                    env_name: "SCAN_CLONED_SOURCE_PACKAGES_PATH",
+                                    description: "Sets a custom path for Swift Package Manager dependencies",
+                                    type: String,
+                                    optional: true),
+        FastlaneCore::ConfigItem.new(key: :skip_package_dependencies_resolution,
+                                     env_name: "SCAN_SKIP_PACKAGE_DEPENDENCIES_RESOLUTION",
+                                     description: "Skips resolution of Swift Package Manager dependencies",
+                                     type: Boolean,
+                                     default_value: false),
+        FastlaneCore::ConfigItem.new(key: :disable_package_automatic_updates,
+                                     env_name: "SCAN_DISABLE_PACKAGE_AUTOMATIC_UPDATES",
+                                     description: "Prevents packages from automatically being resolved to versions other than those recorded in the `Package.resolved` file",
+                                     type: Boolean,
+                                     default_value: false),
+        FastlaneCore::ConfigItem.new(key: :use_system_scm,
+                                    env_name: "SCAN_USE_SYSTEM_SCM",
+                                    description: "Lets xcodebuild use system's scm configuration",
+                                    optional: true,
+                                    type: Boolean,
+                                    default_value: false),
+        FastlaneCore::ConfigItem.new(key: :number_of_retries,
+                                    env_name: 'SCAN_NUMBER_OF_RETRIES',
+                                    description: "The number of times a test can fail before scan should stop retrying",
+                                    type: Integer,
+                                    default_value: 0)
 
       ]
     end

@@ -6,13 +6,18 @@ module Fastlane
       SIGH_UDID = :SIGH_UDID # deprecated
       SIGH_UUID = :SIGH_UUID
       SIGH_NAME = :SIGH_NAME
-      SIGH_PROFILE_TYPE = :SIGH_PROFILE_TYPE
+      SIGH_PROFILE_TYPE ||= :SIGH_PROFILE_TYPE
     end
 
     class GetProvisioningProfileAction < Action
       def self.run(values)
         require 'sigh'
         require 'credentials_manager/appfile_config'
+
+        # Only set :api_key from SharedValues if :api_key_path isn't set (conflicting options)
+        unless values[:api_key_path]
+          values[:api_key] ||= Actions.lane_context[SharedValues::APP_STORE_CONNECT_API_KEY]
+        end
 
         Sigh.config = values # we already have the finished config
 
@@ -65,6 +70,10 @@ module Fastlane
 
       def self.return_value
         "The UUID of the profile sigh just fetched/generated"
+      end
+
+      def self.return_type
+        :string
       end
 
       def self.details

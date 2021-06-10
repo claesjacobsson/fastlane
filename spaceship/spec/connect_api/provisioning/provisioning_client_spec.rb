@@ -1,25 +1,16 @@
 describe Spaceship::ConnectAPI::Provisioning::Client do
-  let(:client) { Spaceship::ConnectAPI::Provisioning::Client.instance }
+  let(:client) { Spaceship::ConnectAPI::Provisioning::Client.new }
   let(:hostname) { Spaceship::ConnectAPI::Provisioning::Client.hostname }
   let(:username) { 'spaceship@krausefx.com' }
   let(:password) { 'so_secret' }
 
   before do
-    Spaceship::Portal.login(username, password)
+    Spaceship::ConnectAPI.login(username, password, use_portal: true, use_tunes: false)
   end
 
   context 'sends api request' do
     before(:each) do
       allow(client).to receive(:handle_response)
-      module Spaceship
-        class ConnectAPI
-          module Provisioning
-            class Client
-              include Spaceship::ConnectAPI::Provisioning
-            end
-          end
-        end
-      end
     end
 
     def test_request_params(url, params)
@@ -76,6 +67,17 @@ describe Spaceship::ConnectAPI::Provisioning::Client do
           req_mock = test_request_body(path, params)
           expect(client).to receive(:request).with(:post).and_yield(req_mock)
           client.get_certificates
+        end
+      end
+
+      context 'get_certificates_for_profile' do
+        let(:path) { "profiles/123456789/certificates" }
+
+        it 'succeeds' do
+          params = {}
+          req_mock = test_request_body(path, params)
+          expect(client).to receive(:request).with(:post).and_yield(req_mock)
+          client.get_certificates(profile_id: '123456789')
         end
       end
     end
